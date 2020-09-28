@@ -1,0 +1,1445 @@
+---
+title: "SolarAdoptionFactorsAnalysesISMDBA"
+author: "Efosa Uyiomendo"
+date: "July 17, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+#Install xlsx package for reading or importing excel files
+```{r}
+
+install.packages("xlsx")
+library("xlsx")
+```
+
+## Importing Survey Data into R
+```{r load in survey data from  excel with header names}
+
+survdata <- read.xlsx("D:/Efosa Uyiomendo/DBA Papers/FinSurRepxl14Jul19.xlsx", 1, header= TRUE)
+ View(survdata)
+
+summary(survdata)
+str(survdata)
+nrow(survdata)
+dim(survdata)
+
+```
+
+
+```{r dimension of survey data}
+table(survdata$age)
+table(survdata$educhigh)
+table(survdata$hholdincm)
+
+```
+
+#Quick and Dirty Crosstabs
+```{r }
+table(survdata$age, survdata$mbuyslrsn)
+table(survdata$educhigh, survdata$mbuyslrsn)
+table(survdata$hholdincm, survdata$mbuyslrsn)
+
+
+```
+
+
+#Prepare Survey Data for Analyses
+```{r cars}
+survdata$email<- as.character(survdata$email)
+survdata$contact<- as.character(survdata$contact)
+
+# <- c("Strongly Agree", "Agree", "Somewhat Agree", "Neither Agree nor Disagree", "Somewhat Disagree", "Disagree","Strongly Disagree")
+# x <- ordered(x, levels = y)
+sdata <- survdata[which(survdata$email!="6a@gmail.com"), ]  #remove Sinia Ewere surveys
+sdata <- sdata[-c(1:34), ]      # remove test surveys and those done assessors, researchers and around the world.
+yy <- sdata[ , c(5:34)] #keep only response columns 6311 rows Sonia and test cases removed.
+xx <- yy
+xx <- as.data.frame(lapply(xx, function(xx){ordered(xx,
+              levels = c("Strongly Agree", "Agree", "Somewhat Agree", "Neither Agree nor Disagree", "Somewhat Disagree", "Disagree","Strongly Disagree", "Decline"), labels = c("Strongly Agree", "Agree", "Somewhat Agree", "Neither Agree nor Disagree", "Somewhat Disagree", "Disagree","Strongly Disagree", "Decline"))}))
+sdata[ , c(5:34)] <- xx
+str(sdata)
+head(sdata, 7)
+
+levels(sdata$clngyprd)
+```
+
+
+#Ordering and Simlifying the levels of Demographic Data (household income, age and education)
+```{r cars}
+# 
+
+levels(sdata$hholdincm)
+levels(sdata$hholdincm) <- c("Above N3.2m", "Below N50k", "N1.6m - N3.2m", "N100k - N200k", "N200k - N400k", "N400k - N800k", "N50k - N100k", "N800k -N1.6m")
+sdata$hholdincm <- ordered(sdata$hholdincm, levels = c("Above N3.2m", "N1.6m - N3.2m", "N800k -N1.6m", "N400k - N800k", "N200k - N400k", "N100k - N200k",  "N50k - N100k",  "Below N50k"))
+
+levels(sdata$age)
+levels(sdata$age) <- c("21 to 24", "25 to 34","35 to 44", "45 to 54", "55 to 64", "65 to 74","75 or older", "Decline","Under 21" )
+sdata$age <- ordered(sdata$age, levels = c("75 or older", "65 to 74", "55 to 64", "45 to 54", "35 to 44", "25 to 34", "21 to 24", "Under 21", "Decline"))
+
+
+
+levels(sdata$educhigh)
+levels(sdata$educhigh) <-c("PhD/DBA", "Bachelors","Masters", "OND/NCE", "Primary", "Secondary")
+sdata$educhigh <- ordered(sdata$educhigh, levels = c("PhD/DBA", "Masters","Bachelors", "OND/NCE", "Secondary", "Primary"))
+
+levels(sdata$region)
+levels(sdata$region) <-c("NCAbjMna", "NorthEast","NorthWest", "SEEngAba", "SSBNIPHC", "SWLagos")
+```
+
+
+
+
+```{r cars}
+head(sdata)
+tail(sdata)
+# Does Intent to buy Solar sdata$muyslrsn vary with Education Level
+
+XT <- xtabs(~mbuyslrsn+educhigh, data = sdata)
+XT
+
+YT <- xtabs(~mbuyslrsn+hholdincm, data =sdata)
+
+ZT <- xtabs(~mbuyslrsn+age, data =sdata)
+
+WT <- xtabs(~mbuyslrsn+region, data =sdata)
+              
+            
+round(prop.table(XT, margin=1), 3)
+round(prop.table(WT, margin=1), 3)
+round(prop.table(WT, margin=1), 3)
+round(prop.table(ZT, margin=1), 2)
+
+barplot(XT,
+        beside=TRUE,
+        legend=TRUE,
+        ylim=c(0, 1500),
+        xlab="Likert score",
+        ylab="Frequency", col = c("red", "blue", "green", "yellow", "brown", "purple", "grey", "black"))
+
+barplot(YT,
+        beside=TRUE,
+        legend=TRUE,
+        ylim=c(0, 1500),
+        xlab="Likert score",
+        ylab="Frequency", col = c("red", "blue", "green", "yellow", "brown", "purple", "grey", "black"),
+      args.legend = list(x="topleft"))
+
+
+barplot(ZT,
+        beside=TRUE,
+        legend=TRUE,
+        ylim=c(0, 1500),
+        xlab="Likert score",
+        ylab="Frequency", col = c("red", "blue", "green", "yellow", "brown", "purple", "grey", "black"),
+        args.legend = list(x="topright"))
+
+barplot(WT,
+        beside=TRUE,
+        legend=TRUE,
+        ylim=c(0, 2000),
+        xlab="Likert score",
+        ylab="Frequency", col = c("red", "blue", "green", "yellow", "brown", "purple", "grey", "black"),
+        args.legend = list(x="topleft"))
+
+
+# tests for normality
+attach(slr8data)
+hist(slrwtprs,probability=T, main="Histogram of Survey Data",xlab="Solar Worth Price", na.rm=TRUE)
+lines(density(slrwtprs),col=2, na.rm=TRUE)
+
+```
+
+
+
+
+#Correlation between Categorical variables
+```{r cars}
+install.packages("GoodmanKruskal")
+library(GoodmanKruskal)
+
+head(sdata, 6)
+
+sdata <- sdata[ , c(1:39)]
+head(sdata)
+
+
+
+sdatacln <- na.omit(sdata)
+head(sdatacln)
+
+#write this clean data to file for use later
+install.packages("xlsx")
+library("xlsx")
+write.xlsx2(sdatacln, "D:/Efosa Uyiomendo/DBA Papers/sdatacln.xlsx", col.names = TRUE, showNA = TRUE )
+
+
+
+pp <- GKtau(survdata$gbwmwrs, survdata$prtrengy)
+pp
+
+envetau <- GKtauDataframe(survdata[, c(5:8)])
+plot(envetau)
+
+innovtau <- GKtauDataframe(survdata[, c(9:11)])
+plot(innovtau)
+
+costtau <- GKtauDataframe(survdata[, c(12:17)])
+plot(costtau)
+
+
+markttau <- GKtauDataframe(survdata[, c(18:21)])
+plot(markttau)
+
+normstau <- GKtauDataframe(survdata[, c(22:26)])
+plot(normstau)
+
+cmplxtau <- GKtauDataframe(survdata[, c(27:31)])
+plot(cmplxtau)
+
+intenttau <- GKtauDataframe(survdata[, c(32:34)])
+plot(intenttau)
+
+dmgptau <- GKtauDataframe(survdata[, c(35, 36, 37, 39)])
+plot(dmgptau)
+
+
+chk1 <- c(5:8)
+sd1e <- subset(sdatacln, select = chk1)
+head(sd1e, 6)
+sd1e <- sd1e[complete.cases(sd1e),]
+str(sd1e)
+
+
+# The survdata dataframe has 39 variables. Just the questions alone has 29 variables. Ploting these is not feasible in one. We can select 2 variables from each construct and plot
+
+varSet2 <- c(5, 6, 9, 11, 12, 16, 17, 18,19, 22, 24, 25, 27, 28, 29, 33)
+survFrame <- subset(survdata, select = varSet2)
+GKmat <- GKtauDataframe(survFrame)
+plot(GKmat)
+GKmat
+GKmat2 <- GKtauDataframe(survdata)
+plot(GKmat2)
+GKmat2
+
+
+
+```
+
+
+#Exploratory Factor Anslysis with Psych Package
+```{r cars}
+#Exploratory Factor Anslysis with Psych Package
+library(psych)
+library(polycor)               # for hetcor()
+#Use the polychoric correlation matrix to do a regular FA. This will feed into the FA
+pc <- hetcor(slr3data, ML=TRUE)   # polychoric corr matrix of survey data already converted to numeric format
+faPC <- fa(r=pc$correlations, nfactors=9, n.obs=6311, rotate="varimax")
+faPC$loadings
+
+#repeat with promax rotation
+pc3 <- hetcor(slr3data, ML=TRUE)   # polychoric corr matrix of survey data already converted to numeric format
+faPC3 <- fa(r=pc3$correlations, nfactors=9, n.obs=6311, rotate="promax")
+faPC3$loadings
+
+
+faPC2  <- fa(r=pc$correlations, nfactors=9, n.obs=6311, rotate="varimax")
+faPC2$loadings
+smc(slr3data,covar=FALSE)
+
+
+fap <- fa.parallel.poly(slr3data)   # parallel analysis for dichotomous data
+vss(pc$correlations, n.obs=6311, rotate="varimax")  # very simple structure
+
+pcPC <- princomp(pc, nfactors = 4, n.obs = 6311, rotate = "varimax")
+pcPC
+
+summary((pcPC))
+
+fa.diagram(faPC, simple=FALSE)
+
+# we want to plot the factors using the psych FA model using oblique rotation or promax
+fa.promax <- fa(r=pc$correlations, nfactors=8, n.obs=6311, rotate="promax", fm="pa")
+fa.promax
+
+fa.diagram(fa.promax, simple=TRUE)
+
+#factor analysis with Oblique rotation
+
+faPC3 <- fa(r=pc$correlations, nfactors=8, n.obs=6311, rotate="promax")
+faPC3$loadings
+
+
+fap <- fa.parallel.poly(slr3data)   # parallel analysis for dichotomous data
+vss(pc$correlations, n.obs=6311, rotate="promax")  # very simple structure
+
+```
+
+
+
+#selectFeatures() function from FSelector package
+```{r cars}
+install.packages("FSelector")
+library(FSelector)
+ddd <- data.matrix(slr2data)
+slr4data <- as.data.frame(ddd)
+information.gain(mbuyslrsn~., slr4data)
+
+
+
+```
+
+
+
+#Features Selection with FSelector Package
+```{r cars}
+#selectFeatures() function from FSelector package
+install.packages("FSelector")
+library(FSelector)
+ddd <- data.matrix(slr2data)
+slr4data <- as.data.frame(ddd)
+information.gain(mbuyslrsn~., slr4data)
+
+```
+
+
+
+
+
+
+
+#Feature Selection for Categorical  Data with carets package
+```{r cars}
+install.packages('caret', dependencies=T)
+install.packages("ggplot2")
+install.packages("recipes")
+library("ggplot2")
+library("recipes")
+library("caret")
+library("catdap")
+
+slrdata <- survdata[which(survdata$email!="6a@gmail.com"), ]  #remove Sinia Ewere surveys
+slrdata <- slrdata[-c(1:34), ]      # remove test surveys and those done assessors, researchers and around the world.
+slrdata <- slrdata[ , c(5:37,39)] #all target response and cartegorical variables
+str(slrdata)
+
+#colnames(dat)[4] = "internship"
+colnames(slrdata)[20] = "fmyinsslr"
+colnames(slrdata)[21] = "nbrinsslr"
+
+levels(slrdata$hholdincm)
+levels(slrdata$hholdincm) <- c("Above N3.2m", "Below N50k", "N1.6m - N3.2m", "N100k - N200k", "N200k - N400k", "N400k - N800k", "N50k - N100k", "N800k -N1.6m")
+
+levels(slrdata$age)
+levels(slrdata$age) <- c("21 to 24", "25 to 34","35 to 44", "45 to 54", "55 to 64", "65 to 74","75 or older", "Decline","Under 21" )
+
+levels(slrdata$educhigh)
+levels(slrdata$educhigh) <-c("PhD/DBA", "Bachelors","Masters", "OND/NCE", "Primary", "Secondary")
+
+levels(slrdata$region)
+levels(slrdata$region) <-c("NCAbjMna", "NorthEast","NorthWest", "SEEngAba", "SSBNIPHC", "SWLagos")
+
+
+
+
+
+```
+
+
+
+
+#Features Analysis
+```{r cars}
+install.packages("FactoMineR")
+install.packages("factoextra")
+
+library("FactoMineR")
+library("factoextra")
+#data("poison")
+res.mca <- MCA(poison, 
+              quanti.sup = 1:2, # Supplementary quantitative variable
+              quali.sup = 3:4,  # Supplementary qualitative variable
+              graph=FALSE)
+# Add connected line segments to the plot
+
+eig.val <- res.mca$eig
+barplot(eig.val[, 2], 
+        names.arg = 1:nrow(eig.val), 
+        main = "Variances Explained by Dimensions (%)",
+        xlab = "Principal Dimensions",
+        ylab = "Percentage of variances",
+        col ="steelblue")
+# Add connected line segments to the plot
+lines(x = 1:nrow(eig.val), eig.val[, 2], 
+      type = "b", pch = 19, col = "red")
+
+head(slrdata2, 6)
+str(slrdata2)
+
+#MCA with FactomineR
+#Active individuals (rows 1:55): Individuals that are used during the correspondence analysis.
+#Active variables (columns 5:15) : Variables that are used for the MCA.
+#Supplementary variables : They don't participate to the MCA. The coordinates of these variables will be predicted.
+
+
+slrdata2.active <- slrdata2[1:6149, 1:30]
+head(slrdata2.active[, 1:6])
+
+surv_mca0 <- MCA(slrdata2.active, graph = FALSE)
+#The output of the function MCA() is a list including :
+print(surv_mca0)
+
+#summary of MCA outputs
+
+summary(surv_mca0, nb.dec = 2, ncp = 2)
+eigenvalues <- get_eigenvalue(surv_mca0)
+head(round(eigenvalues, 2))
+fviz_screeplot(surv_mca0)
+
+#It's also possible to use the function fviz_mca_biplot()[in factoextra package] to draw a nice looking plot
+# Change the theme
+fviz_mca_biplot(surv_mca0) +
+  theme_minimal()
+
+
+#Variable categories
+#The function get_mca_var()[in factoextra] is used to extract the results for variable categories. This function returns a #list containing the coordinates, the cos2 and the contribution of variable categories:var_xurv <- get_mca_var(surv_mca0)
+var <- get_mca_var(surv_mca0)
+var
+#Correlation between variables and principal dimensions
+#Variables can be visualized as follow:
+plot(surv_mca0, choix = "var")
+#Coordinates of variable categories
+head(round(var$coord,2), 20)
+
+#Contribution of variable categories to the dimensions
+#The contribution of the variable categories (in %) to the definition of the dimensions can be extracted as follow:
+
+head(round(var$contrib,2), 20)
+
+# function fviz_contrib()[in factoextra] can be used to draw a bar plot of variable contributions:
+
+# Contributions of variables on Dim.1
+fviz_contrib(surv_mca0, choice = "var", axes = 1)
+fviz_contrib(surv_mca0, choice = "var", axes = 2)
+fviz_contrib(surv_mca0, choice = "var", axes = 3)
+fviz_contrib(surv_mca0, choice = "var", axes = 4)
+
+#As the model contains 236 categories mapping to 10 dimensions let us display the top ten contributor to the top 4 dimensions
+
+fviz_contrib(surv_mca0, choice = "var", axes = 3, top = 32)
+```
+
+
+
+
+
+
+#Second Pass Tau Correlation Between categorical variables Computation with GoodmanKruskal Package
+```{r cars}
+
+install.packages("GoodmanKruskal")
+library(GoodmanKruskal)
+
+str(survdata)
+
+surv2data <- survdata[ , - c(1:4, 35:40)]
+surv2data <- surv2data[, - c(3,  7, 8, 9, 11, 16, 17, 20, 22, 28, 30)]
+head(surv2data)
+str(surv2data)
+
+enve2tau <- GKtauDataframe(surv2data[, c(1:3)])
+plot(enve2tau)
+
+innov2tau <- GKtauDataframe(surv2data[, c(4:5)])
+plot(innov2tau)
+
+cost2tau <- GKtauDataframe(surv2data[, c(6:8)])
+plot(cost2tau)
+
+
+markt2tau <- GKtauDataframe(surv2data[, c(9:10)])
+plot(markt2tau)
+
+norms2tau <- GKtauDataframe(surv2data[, c(11:13)])
+plot(norms2tau)
+
+cmplx2tau <- GKtauDataframe(surv2data[, c(14:18)])
+plot(cmplx2tau)
+
+
+
+
+
+```
+
+
+
+# Multiple Correspondence Analysis (HOMALS)  under Gifi Package
+```{r cars}
+library(Gifi)
+library(psych)
+head(sdatacln2)
+str(sdatacln2)
+str(slrdata2)
+
+str(survdata)
+
+
+fitordsurv <- princals(slrdata2[ , 1:30], ndim = 2, ordinal = TRUE, ties = "s", knots = knotsGifi(data, "D"), 
+degrees = 2, copies = 1, missing = "m", normobj.z = TRUE, active = TRUE,
+itmax = 1000, eps = 1e-06, verbose = FALSE)
+
+#Fits a multiple correspondence analysis (MCA). The default is to take each input variable as nominal. Through restrictions on the transformations (ordinal in conjunction with splines) various generalizations of MCA can be achieved.
+
+fithartsurv <- homals(slrdata2[ , 1:30], ndim = 9, ordinal = TRUE, ties = "s", knots = knotsGifi(data, "D"), 
+degrees = -1, missing = "m", normobj.z = TRUE, active = TRUE, itmax = 1000, 
+eps = 1e-6, verbose = FALSE)
+
+
+fasurv = homals(slrdata2, ndim = 3, ordinal = TRUE)
+fasurv2 = homals(slrdata2, ndim = 10, ordinal = TRUE)
+
+# nfa0$eigenvalues
+# Screep plots
+par(mfrow = c(1,2))
+plot(fasurv, plot.type = "screeplot")
+plot(fasurv2, plot.type = "screeplot")
+
+
+
+
+fithartsurv
+summary(fithartsurv)
+
+fithartsurv$loadings
+fithartsurv$rhat
+fithartsurv$lambda
+
+plot(fithartsurv, plot.dim = c(1, 2), plot.type= c("screeplot"), main ="Screeplot showing variable contribution", type, xlab= "dimensions", ylab ="pct contribution", xlim = c(4), leg.pos = "topright")
+
+
+plot(fithartsurv, plot.dim = c(1, 2), plot.type= c("catplot"), main ="category variable plot", type, xlab= "dimensions", ylab ="pct contribution", xlim = c(4), leg.pos = "topright")
+
+
+#attempts loadings using the FA function, a suitable nfactor is 9
+# Polychoric factor analysis
+poly_model = fa(slrdata2, nfactor=9, n.obs = nrow(slrdata2), missing = TRUE, cor="poly", fm="mle", rotate = "varimax")
+
+#save(poly_model, file = "poly_model")
+poly_model$loadings
+
+```
+
+
+#Cronbach's Alpha Overall
+```{r cars}
+str(survdata2) #
+str(surv2data) #6523 obs of 19 vrbls after first pass attri sekection
+str(survdata) #6523 obs 40 vrabls nominal factor
+str(sdata) #6311 obs if 39 vrbls ordered
+str(slrdata)  #6311 obs of 34 variables factor nominal
+slr2data <- slrdata[, -c(28, 30, 31:34)]
+str(slr2data)
+
+mapping <- c("NA" = 0, "Strongly Disagree" = 1, "Disagree" = 2, "Somewhat Disagree" = 3, "Neither Agree nor Disagree" = 4,  "Agree" = 5, "Somewhat Agree" = 6, "Strongly Agree" = 7)
+d$variable.r <- mapping[d$variable]
+gg <- slr2data
+gg <- as.data.frame(lapply(gg, function(gg){as.numeric(as.factor(gg)) }))
+slr3data <-  gg # 6311 obs of 28 variables coded numercally
+str(gg)
+
+
+install.packages("psych")
+library("psych")
+install.packages("GPArotation")
+install.packages("Scale")
+library("Scale")
+library(GPArotation)
+
+attach(slr3data)
+slrScale <- Scale(data=slr3data,
+reverse=c(11),
+items = IT,
+col_names= paste('q', 1:28, sep=''))
+
+IT <- c('E1_global warming worsening', 'E2intr in clean energy products', 'E3concerned about environment', 'E4prioritize renewable energy', 'I1stop & check new products', 'I2first to buy new products',  'I3try new products launched', 'C1solar worth the price', 'C2monthly electric bills justify solar', 'C3genset fuel cost and mtce cost too high', 'C4need to recover genset capital cost before solar', 'C5subsidies and discount will help', 'C6flex payments terms will help', 'M1_saw solar adverts on media', 'M2experienced solar direct marketing', 'M3solar campaigns in my native language', 'M4solar adverts answered my questions', 'N1know friends who installed solar',  'N2know colleagues who installed solar', 'N3know family members who installed solar', 'N4know neighbours who installed solar', 'N5know worship colleagues who installed solar', "X1easy to install solar", 'X2solar easy to use', 'X3solar systems durable & strong', 'X4easy to maintain solar', 'X5can operate solar with genset & mains', 'must buy solar system soon')
+
+slrScale
+slrPre <- PreProc(slrScale)
+slrRel <- ItemAnalysis(slrPre)
+slrRel
+#slrRel <- ItemAnalysis(slrPre, exclude=c(1, 3, 15, 13))
+#slrRel
+ReportTable(slrRel, write_file=FALSE, sep=";")
+
+# exclude some variables and  map againts 2 factors
+slrRel2 <- ItemAnalysis(slrPre, method="spearman", fm="gls",
+nfactors=2, rcut= 0.3, score_type="z", exclude=c(11))
+ReportTable(slrRel2)
+ChooseBest(slrRel2, n=16)
+print(slrRel2$rely)
+print(slrRel2$valid)
+print(slrRel2$ItemAnalysis)
+```
+
+
+
+
+
+#Cronbach's Alpha for Sub-tests
+```{r cars}
+# These subsests are for environmetal stewardship, acceptance of innovation, costor affordability, marketing effectiveness, subjective norms, complexity or ease of use, intent to use and demographics (8 total)
+
+
+str(slrdata)  #6311 obs of 34 variables factor nominal
+#slr2data <- slrdata[, -c(28, 30, 31:34)]
+#str(slr2data)
+
+# render the complete dataframe wih 8 subsets into numeric-coded one
+hh <- slrdata
+hh <- as.data.frame(lapply(hh, function(hh){as.numeric(as.factor(hh)) }))
+slr8data <-  hh # 6311 obs of 28 variables coded numercally
+str(slr8data)
+
+
+attach(slr8data)
+
+
+ITT <- c('E1_global warming worsening', 'E2intr in clean energy products', 'E3concerned about environment', 'E4prioritize renewable energy', 'I1stop & check new products', 'I2first to buy new products',  'I3try new products launched', 'C1solar worth the price', 'C2monthly electric bills justify solar', 'C3genset fuel cost and mtce cost too high', 'C4need to recover genset capital cost before solar', 'C5subsidies and discount will help', 'C6flex payments terms will help', 'M1_saw solar adverts on media', 'M2experienced solar direct marketing', 'M3solar campaigns in my native language', 'M4solar adverts answered my questions', 'N1know friends who installed solar',  'N2know colleagues who installed solar', 'N3know family members who installed solar', 'N4know neighbours who installed solar', 'N5know worship colleagues who installed solar', "X1easy to install solar", 'X2solar easy to use', 'X3solar systems durable & strong', 'X4easy to maintain solar', 'X5can operate solar with genset & mains', 'likely buy solar soon', 'must buy solar system soon', 'when possible buy solar', 'D1 age', 'D2 highest education level', 'D3household income', 'D4 region in Nigeria')
+
+slr8Scale <- Scale(data=slr8data,
+reverse=c(11, 31, 34),  #reversed because this variable is known to be negatively correlated.
+items = ITT, # all 34 items including 3 intent and 4 demographic
+col_names= paste('q', 1:34, sep=''))
+
+slr8Scale
+slr8Pre <- PreProc(slr8Scale)
+slr8Rel <- ItemAnalysis(slr8Pre)
+slr8Rel
+ReportTable(slr8Rel, write_file=FALSE, sep=";")
+
+#CRONBACH'S ALPHA FOR ENVIRONMENTAL SUBTESTS
+slrEScale <- Scale(data=slr8data[ , 1:4],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[1:4], # Only 4 environental items 
+col_names= paste('q', 1:4, sep=''))
+
+slrEScale
+slrEPre <- PreProc(slrEScale)
+slrERel <- ItemAnalysis(slrEPre)
+slrERel
+ReportTable(slrERel, write_file=FALSE, sep=";")
+
+
+#CRONBACH'S ALPHA FOR ACCEPTANCE OF INNOVATION SUBTESTS
+slrIScale <- Scale(data=slr8data[ , 5:7],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[5:7], # Only 3 Innovation items 
+col_names= paste('q', 5:7, sep=''))
+
+slrIScale
+slrIPre <- PreProc(slrIScale)
+slrIRel <- ItemAnalysis(slrIPre) # reliability analysis
+slrIRel
+ReportTable(slrIRel, write_file=FALSE, sep=";")
+
+
+
+#CRONBACH'S ALPHA FOR COST AND AFFORDABILITY SUBTESTS
+slrCScale <- Scale(data=slr8data[ , 8:13],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[8:13], # Only 4 environental items 
+col_names= paste('q', 8:13, sep=''))
+
+slrCScale
+slrCPre <- PreProc(slrCScale)
+slrCRel <- ItemAnalysis(slrCPre)
+slrCRel
+ReportTable(slrCRel, write_file=FALSE, sep=";")
+
+
+#CRONBACH'S ALPHA FOR MARKETING EFFECTIVENESS SUBTESTS
+slrMScale <- Scale(data=slr8data[ , 14:17],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[14:17], # Only 4 marketing effectiveness items 
+col_names= paste('q', 14:17, sep=''))
+
+slrMScale
+slrMPre <- PreProc(slrMScale)
+slrMRel <- ItemAnalysis(slrMPre)
+slrMRel
+ReportTable(slrMRel, write_file=FALSE, sep=";")
+
+
+
+#CRONBACH'S ALPHA FOR SUBJECIVE NORMS SUBTESTS
+slrNScale <- Scale(data=slr8data[ , 18:22],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[18:22], # Only 4 subjective norms items 
+col_names= paste('q', 18:22, sep=''))
+
+slrNScale
+slrNPre <- PreProc(slrNScale)
+slrNRel <- ItemAnalysis(slrNPre)
+slrNRel
+ReportTable(slrNRel, write_file=FALSE, sep=";")
+
+
+
+#CRONBACH'S ALPHA FOR COMPLEXITY & EASE IF USE  SUBTESTS
+slrXScale <- Scale(data=slr8data[ , 23:27],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[23:27], # Only 5 complexity and ease of use items 
+col_names= paste('q', 23:27, sep=''))
+
+slrXScale
+slrXPre <- PreProc(slrXScale)
+slrXRel <- ItemAnalysis(slrXPre)
+slrXRel
+ReportTable(slrTRel, write_file=FALSE, sep=";")
+
+
+#CRONBACH'S ALPHA FOR INTENT TO USE  SUBTESTS
+slrTScale <- Scale(data=slr8data[ , 28:30],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[28:30], # Only 3 INTENT TO USE items 
+col_names= paste('q', 28:30, sep=''))
+
+slrTScale
+slrTPre <- PreProc(slrTScale)
+slrTRel <- ItemAnalysis(slrTPre)
+slrTRel
+ReportTable(slrTRel, write_file=FALSE, sep=";")
+
+
+#CRONBACH'S ALPHA FOR Demographic Subtests
+slrDScale <- Scale(data=slr8data[ , 31:34],
+#reverse=Null()  #reversed because this variable is known to be negatively correlated.
+items = ITT[31:34], # Only 5 marketing effectiveness items 
+col_names= paste('q', 31:34, sep=''))
+
+slrDScale
+slrDPre <- PreProc(slrDScale)
+slrDRel <- ItemAnalysis(slrDPre)
+slrDRel
+ReportTable(slrDRel, write_file=FALSE, sep=";")
+
+
+
+```
+
+
+#Confirmatory Factor Analysis
+```{r cars}
+install.packages("lavaan", dependencies=TRUE)
+#You can check if the installation was succesful by typing
+library(lavaan)
+
+# CFA for First Model derived from viramx rotation.
+# this model syntax is so short, is that behind the scenes, the function will take care of several things. First,
+#by default, the factor loading of the first indicator of a latent variable is fixed to 1, thereby fixing the scale
+#of the latent variable. Second, residual variances are added automatically. And third, all exogenous latent
+#variables are correlated by default. This way, the model syntax can be kept concise
+
+slr.CFAmod1 <- 'Norms =~ q18 + q19 + q20 + q21 + q22
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+MktEff =~ q14 + q15 + q16
+AInnov =~ q5 + q6 + q7
+FlxCost =~ q12 + q13
+GnCost =~ q10 + q11'
+
+cfadata <-  slr3data
+colnames(cfadata) <- paste('q', 1:28, sep='')
+str(cfadata)
+
+cfadata[,c(1:28)] <-
+    lapply(cfadata[, c(1:8)], ordered)
+
+fitcfa1 <- cfa(slr.CFAmod1, data=cfadata)
+summary(fitcfa1, fit.measures=TRUE)
+
+
+# CFA for Second Model derived from Promax of Oblique rotation.This is the default
+# this model syntax is so short, is that behind the scenes, the function will take care of several things. First,
+#by default, the factor loading of the first indicator of a latent variable is fixed to 1, thereby fixing the scale
+#of the latent variable. Second, residual variances are added automatically. And third, all exogenous latent
+#variables are correlated by default. This way, the model syntax can be kept concise
+
+slr.CFAmod2 <- 'Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+GnCost =~ q10 + q11
+FlxCost =~ q12 + q13
+Norms2 =~ q19 '
+
+cfadata <-  slr3data
+colnames(cfadata) <- paste('q', 1:28, sep='')
+str(cfadata)
+cfadata[,c(1:28)] <-
+    lapply(cfadata[, c(1:8)], ordered)
+
+fitcfa2 <- cfa(slr.CFAmod2, data=cfadata)
+summary(fitcfa2, fit.measures=TRUE)
+
+```
+
+
+
+
+
+
+#SEM Model Comparisons for 5 Models
+```{r cars}
+install.packages("lavaan", dependencies=TRUE)
+#You can check if the installation was succesful by typing
+library(lavaan)
+
+semdata <-  slr3data
+colnames(semdata) <- paste('q', 1:28, sep='')
+str(semdata)
+semdata[,c(1:28)] <-
+    lapply(semdata[, c(1:8)], ordered)
+
+
+ #SEM Model for 5 models based on the data set using Lavaan 
+# this model syntax is so short, is that behind the scenes, the function will take care of several things. First,
+#by default, the factor loading of the first indicator of a latent variable is fixed to 1, thereby fixing the scale
+#of the latent variable. Second, residual variances are added automatically. And third, all exogenous latent
+#variables are correlated by default. This way, the model syntax can be kept concise
+
+slr.semmod2 <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+AInnov ~ Intent
+EnveS ~ Intent
+MktEff ~ AInnov
+Norms ~ Intent + AInnov + MktEff
+Cost ~ Intent + MktEff + EnveS
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+
+'
+
+
+fitsem2 <- sem(slr.semmod2, data=semdata)
+summary(fitsem2, standardized=TRUE)
+
+
+#SEM Third Model wb
+
+slr.semmod3 <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+AInnov ~ Intent
+EnveS ~ Intent
+MktEff ~ AInnov
+Norms ~ Intent + AInnov + MktEff
+Cost ~ Intent + MktEff + EnveS
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+q6 ~~ q7 
+q14 ~~ q15 + q16
+q18 ~~ q19 + q20 + q21 + q22
+q10 ~~ q11
+q12 ~~ q13
+q23 ~~ q24 + q25 + q26 + q27
+q1 ~~ q2 + q3 + q4
+'
+
+
+fitsem3 <- sem(slr.semmod3, data=semdata)
+summary(fitsem3, standardized=TRUE)
+
+
+#SEM fourth and 5th  Model without Intent Latent Variab
+
+slr.semmod4 <- '
+# measurement model
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+AInnov ~ EnveS
+MktEff ~ AInnov
+Norms ~ EnveS + AInnov + MktEff
+Cost ~ MktEff + EnveS
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+q6 ~~ q7 
+q14 ~~ q15 + q16
+q18 ~~ q19 + q20 + q21 + q22
+q10 ~~ q11
+q12 ~~ q13
+q23 ~~ q24 + q25 + q26 + q27
+q1 ~~ q2 + q3 + q4
+'
+
+
+fitsem4 <- sem(slr.semmod4, data=semdata)
+summary(fitsem4
+        , standardized=TRUE)
+
+#SEM f 5th  Model without Intent Latent Variab
+
+slr.semmod5 <- '
+# measurement model
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+AInnov ~ EnveS
+MktEff ~ AInnov
+Norms ~ EnveS + AInnov + MktEff
+Cost ~ MktEff + EnveS
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+
+'
+
+fitsem5 <- sem(slr.semmod5, data=semdata)
+summary(fitsem5, standardized=TRUE)
+
+# SEM Model for 6th (with regressors) and 7th Iteration (without regressors)
+
+slr.semmod7 <- '
+# measurement model
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+MktEff ~ AInnov
+Norms ~ EnveS + AInnov + MktEff
+Cost ~ EnveS
+Cmplx ~ EnveS + Cost'
+
+fitsem7 <- sem(slr.semmod7, data=semdata)
+summary(fitsem7, standardized=TRUE)
+
+
+#SEM for Model 8 and Nine
+
+
+slr.semmod4 <- '
+# measurement model
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+MktEff =~ q14 + q15 + q16
+AInnov =~ q6 + q7
+Cost =~ q10 + q11 + q12 + q13
+#regressions
+AInnov ~ EnveS
+MktEff ~ AInnov
+Norms ~ EnveS + AInnov + MktEff
+Cost ~ MktEff + EnveS
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+q6 ~~ q7 
+q14 ~~ q15 + q16
+q18 ~~ q19 + q20 + q21 + q22
+q10 ~~ q11
+q12 ~~ q13
+q23 ~~ q24 + q25 + q26 + q27
+q1 ~~ q2 + q3 + q4
+
+
+```
+
+
+
+
+#SEM Modeling combined with Features Selection addressing plenty correlations
+```{r cars}
+
+install.packages("lavaan", dependencies=TRUE)
+#You can check if the installation was succesful by typing
+library(lavaan)
+
+semdatam <-  slr3data
+colnames(semdatam) <- paste('q', 1:28, sep='')
+str(semdatam)
+semdatam[,c(1:28)] <-
+    lapply(semdata[, c(1:8)], ordered)
+
+
+
+ #SEM Mode 8  with features Selection  models based on the data set using Lavaan 
+# this model syntax is so short, is that behind the scenes, the function will take care of several things. First,
+#by default, the factor loading of the first indicator of a latent variable is fixed to 1, thereby fixing the scale
+#of the latent variable. Second, residual variances are added automatically. And third, all exogenous latent
+#variables are correlated by default. This way, the model syntax can be kept concise
+
+slr.semmod2f <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+Cost =~ q12 + q13
+#regressions
+EnveS ~ Intent
+Norms ~ Intent
+Cost ~ Intent + EnveS + Norms
+Cmplx ~ EnveS + Cost
+
+# residual correlations
+'
+
+fitsem2f <- sem(slr.semmod2f, data=semdatam)
+summary(fitsem2f, standardized=TRUE)
+
+
+
+# Model 9 sem model with features selection Gain ratio 16
+
+slr.semmod3f <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 + q20 + q21 + q22
+Cost =~ q12 + q13
+#regressions
+EnveS ~ Intent
+Norms ~ Intent
+Cost ~ Intent
+Cmplx ~ Intent
+
+# residual correlations
+'
+
+fitsem3f <- sem(slr.semmod3f, data=semdatam)
+summary(fitsem3f, standardized=TRUE)
+
+
+
+
+
+# Model 10 sem model with features selection Gain ratio 16
+
+slr.semmod4f <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q23 + q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q3 + q4
+Norms =~ q18 + q19 
+Cost =~ q13
+#regressions
+EnveS ~ Intent
+Norms ~ Intent
+Cost ~ Intent
+Cmplx ~ Intent
+
+# residual correlations
+'
+
+fitsem4f <- sem(slr.semmod4f, data=semdatam)
+summary(fitsem4f, standardized=TRUE)
+
+
+
+
+# Variable reduction mean max mode
+semdtm <-  slr3data
+colnames(semdtm) <- paste('q', 1:28, sep='')
+str(semdtm)
+
+
+semdtm$intent <- semdtm$q28
+semdtm$enve <- rowMeans(subset(semdtm, select = c(1:4)), na.rm = TRUE)
+semdtm$AInv <- rowMeans(subset(semdtm, select = c(5:7)), na.rm = TRUE)
+semdtm$Cost <- rowMeans(subset(semdtm, select = c(8:13)), na.rm = TRUE)  #find a way to reverse 11
+semdtm$MktEff <- rowMeans(subset(semdtm, select = c(14:17)), na.rm = TRUE)
+semdtm$Norms <- rowMeans(subset(semdtm, select = c(18:22)), na.rm = TRUE)
+semdtm$Cmplx <- rowMeans(subset(semdtm, select = c(23:27)), na.rm = TRUE)
+
+str(semdtm)
+
+#Restore some demographics data
+semdtm$age <- slr8data$age
+semdtm$hhincm <- slr8data$hholdincm
+semdtm$heduc <- slr8data$educhigh
+
+str(semdtm)
+
+semdtmX <- semdtm[, c(29:38)]
+str(semdtmX)
+
+#regression analysis
+
+#restore the dependent variable to ordered form. Do same for demographic data. Results in mix of numercal and categorical variables
+
+
+kk <- c(1,8,9,10)   #convert intent, age, education and household income to factor
+semdtmX[,kk] <- lapply(semdtmX[,kk] , factor)
+str(semdtmX)
+
+#Partition semdtmX into training and test sets 80% / 20%
+ind <- sample(2, nrow(semdtmX), replace = TRUE, prob = c(0.8, 0.2))
+trainX = semdtmX[ind==1, ]
+testX  = semdtmX[ind==2, ]
+
+#Ordinal Logistics REgression Model using Proportional Odds ordinal Logistics Regression
+library(MASS)
+
+survpolr <- polr(intent ~ enve+AInv+Cost+MktEff+Norms+Cmplx+hhincm+heduc+age, trainX, Hess =TRUE)
+summary(survpolr)
+
+#P-value calculation
+(ctable <- coef(summary(survpolr)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE)*2
+(ctable <- cbind(ctable, "p value" = p))
+
+
+# Stepwise removal of insignificant variables
+library(MASS)
+
+
+survpolr <- polr(intent ~ enve+Cost+MktEff+Norms+Cmplx, trainX, Hess =TRUE)
+summary(survpolr)
+
+#P-value calculation
+(ctable <- coef(summary(survpolr)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE)*2
+(ctable <- cbind(ctable, "p value" = p))
+
+predXv <- predict(survpolr, trainX[1:100, ], type="prob")
+predXv
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+
+
+Repeat variable Reduction Using the maximum method of item reduction
+```{r cars}
+# Variable reduction mean max mode
+semdmax <-  slr3data
+colnames(semdmax) <- paste('q', 1:28, sep='')
+str(semdmax)
+
+
+
+semdtm$intent <- semdtm$q28
+semdmax$intent <- semdmax$q28
+
+#we take the means of the group of items and use the round functon plus ordered to restore them to factors
+semdmax$enve <- round(rowMeans(subset(semdmax, select = c(1:4)), na.rm = TRUE))
+semdmax$AInv <-  round(rowMeans(subset(semdmax, select = c(5:7)), na.rm = TRUE))
+semdmax$Cost <-  round(rowMeans(subset(semdmax, select = c(8:13)), na.rm = TRUE)) #find a way to reverse 11
+semdmax$MktEff <-  round(rowMeans(subset(semdmax, select = c(14:17)), na.rm = TRUE))
+semdmax$Norms <- round(rowMeans(subset(semdmax, select = c(18:22)), na.rm = TRUE))
+semdmax$Cmplx <-  round(rowMeans(subset(semdmax, select = c(23:27)), na.rm = TRUE))
+
+
+str(semdmax)
+
+#Restore some demographics data
+semdmax$age <- slr8data$age
+semdmax$hhincm <- slr8data$hholdincm
+semdmax$heduc <- slr8data$educhigh
+
+semdmax[,c(1:38)] <-
+    lapply(semdmax[, c(1:8)], ordered)
+
+str(semdmax)
+
+semdregdata <- semdmax[, c(29:38)]
+
+str(semdregdata)
+
+
+#regression analysis
+
+#restore the dependent variable to ordered form. Do same for demographic data. Results in mix of numercal and categorical variables
+
+
+
+
+#Partition semdregdata into training and test sets 80% / 20%
+ind2 <- sample(2, nrow(semdregdata), replace = TRUE, prob = c(0.8, 0.2))
+trainX2 = semdregdata[ind2==1, ]
+testX2  = semdregdata[ind2==2, ]
+
+#Ordinal Logistics REgression Model using Proportional Odds ordinal Logistics Regression
+library(MASS)
+
+survpolr2 <- polr(intent ~ enve+AInv+Cost+MktEff+Norms+Cmplx+hhincm+heduc+age, trainX2, Hess =TRUE)
+summary(survpolr2)
+
+#P-value calculation
+(c3table <- coef(summary(survpolr3)))
+p <- pnorm(abs(c3table[, "t value"]), lower.tail = FALSE)*2
+(c3table <- cbind(c3table, "p value" = p))
+
+
+# Stepwise removal of insignificant variables
+library(MASS)
+survpolr2 <- polr(intent ~ enve+AInv+Cost+MktEff+Norms+Cmplx, trainX, Hess =TRUE)
+summary(survpolr2)
+
+#P-value calculation
+(ctable2 <- coef(summary(survpolr2)))
+p <- pnorm(abs(ctable2[, "t value"]), lower.tail = FALSE)*2
+(ctable2 <- cbind(ctable2, "p value" = p))
+
+predXv <- predict(survpolr, trainX[1:100, ], type="prob")
+predXv
+
+
+
+```
+
+
+
+#Ordinal Logistics Regression with FSelected Variables
+```{r cars}
+#Prepare Survey Data for Analyses
+```{r cars}
+str(sdata)
+str(slr8data)
+kk <- slr8data[, 1:30]
+str(kk)
+
+kk[, 1:30]<- lapply(kk[, 1:30], as.factor)
+
+
+
+#Maybe you are looking for this plyr::revalue function:
+#mutate(dat, x = revalue(x, c("A" = "B")))
+
+ww <- sdata[35:37]
+head(ww)
+levels(ww$age)<- c("Over 54", "Over 54", "Over 54", "35 to 54", "35 to 54",  "Below 35", "Below 35", "Below 35", "Decline")
+ww$age <- ordered(ww$age, c("Over 54", "35 to 54", "Below 35"))
+
+levels(ww$educhigh) <- c("Postgrad","Postgrad", "BSc", "Pry/Postpry", "Pry/Postpry", "Pry/Postpry")
+ww$educhigh <- ordered(ww$educhigh, c("Postgrad", "BSc", "Pry/Postpry"))
+str(ww)
+
+levels(ww$hholdincm) <- c("High", "High", "High", "Mid", "Mid", "Low", "Low", "Low")
+ww$hholdincm <- ordered(ww$hholdincm, c("High", "Mid", "Low"))
+
+#collate regresssion data
+sdatarcd <- kk
+str(sdatarcd)
+
+#select variables from FSelector
+sdrcd <- sdatarcd[, c("gbwmwrs", "clngyprd", "prtrengy", "flxpymtgd", "slradvmda", "slrdrtcms", "slradvansq", "frdinsslr", "clgsinsslr", "fmyinsslr", "nbrinsslr", "ezyinsslr", "usrfrdslr", "drbstgslr", "ezymtcslr", "intslrgnp", "mbuyslrsn"
+)]
+
+str(sdrcd)
+sdrcd <- as.data.frame(lapply(sdrcd, function(sdrcd){as.factor(sdrcd) }))
+
+#make independeent variable only   ie Yes / No
+sdrcd$mbuyslrsn <- kk$mbuyslrsn
+sdrcd$mbuyslrsn <- factor(cut(sdrcd$mbuyslrsn, breaks = 3, labels =c("No", "Maybe", "Yes"), exclude=NULL))
+
+#Ordinal Logistics REgression Model using Proportional Odds ordinal Logistics Regression 
+library(MASS)
+
+#Partition semdtmX into training and test sets 80% / 20%
+ind5 <- sample(2, nrow(sdrcd), replace = TRUE, prob = c(0.8, 0.2))
+trainXr = sdrcd[ind5==1, ]
+testXr  = sdrcd[ind5==2, ]
+
+
+sdrpolr <- polr(mbuyslrsn ~ gbwmwrs + clngyprd + prtrengy + flxpymtgd + slradvmda + slrdrtcms + slradvansq + frdinsslr + clgsinsslr + fmyinsslr + nbrinsslr + ezyinsslr + usrfrdslr + drbstgslr + ezymtcslr + intslrgnp, trainXr, Hess =TRUE)
+summary(sdrpolr)
+
+#P-value calculation
+(c6table <- coef(summary(sdrpolr)))
+p <- pnorm(abs(c6table[, "t value"]), lower.tail = FALSE)*2
+(c6table <- cbind(c6table, "p value" = p))
+
+
+
+
+
+#Logistics REgression Model Bloor Pacakage and glm
+# Install release version from CRAN
+install.packages("blorr")
+library("blorr")
+sdrcd2$mbuyslrsn <- factor(cut(sdrcd2$mbuyslrsn, breaks = 2, labels =c("No", "Yes"), exclude=NULL))
+
+
+sdrcln <- na.omit(sdrcd2)
+str(sdrcln)
+
+#Stepwise Selection: For the initial/ first cut model, all the independent variables are put into the mode> we could have used "."" to specify all the variables.
+
+blrmodel <- glm(mbuyslrsn ~ gbwmwrs + clngyprd + prtrengy + flxpymtgd + slradvmda + slrdrtcms + slradvansq + frdinsslr + clgsinsslr + fmyinsslr + nbrinsslr + ezyinsslr + usrfrdslr + drbstgslr + ezymtcslr + intslrgnp, data = sdrcln, family = binomial(link = "logit"))
+
+#Selection Summary
+blr_step_aic_both(blrmodel)
+
+#Plots model
+blrmodel %>%
+  blr_step_aic_both() %>%
+  plot()
+
+#this is the opptimized model derived from the StepAIC results, only 12 variables
+blr2model <- glm(mbuyslrsn ~ gbwmwrs + clngyprd + prtrengy + flxpymtgd + slradvansq + frdinsslr + clgsinsslr + fmyinsslr + usrfrdslr + drbstgslr + ezymtcslr + intslrgnp, data = sdrcln, family = binomial(link = "logit"))
+# print all key regresssion parameters
+blr_regress(blr2model)
+
+#Model Fit Statistics & Model validation
+blr_model_fit_stats(blr2model)
+
+#Hosmer Lemeshow Test
+blr_test_hosmer_lemeshow(blr2model)  #not running because of missing values 6258 v 6311
+
+#Lift Curve Plotting
+(blr_gains_table(blr2model))
+blr2model %>%
+    blr_gains_table() %>%
+    plot()
+
+#ROC Curve
+blr2model %>%
+    blr_gains_table() %>%
+  blr_roc_curve()
+
+#KS Curve Chart
+blr2model %>%
+    blr_gains_table() %>%
+  blr_ks_chart()
+
+
+#capture Rate by Decile
+blr2model %>%
+  blr_gains_table() %>%
+  blr_decile_capture_rate()
+
+#Lorenz
+blr_lorenz_curve(blr2model)
+
+#Influence Diagnostics
+blr_plot_diag_influence(blr2model)
+
+#Fitted Values Diagnostics
+blr_plot_diag_fit(blrmodel)
+```
+
+
+
+```{r cars}
+
+```{r cars}
+# Model 11 sem model with features selection from Regresion with glm
+
+install.packages("lavaan", dependencies=TRUE)
+#You can check if the installation was succesful by typing
+library(lavaan)
+
+slr.semmod11f <- '
+# measurement model
+Intent =~ q28
+Cmplx =~ q24 + q25 + q26 + q27
+EnveS =~ q1 + q2 + q4
+Norms =~ q18 + q19 
+Cost =~ q13
+MktEff =~ q17
+
+#regressions
+EnveS ~ Intent
+Norms ~ Intent
+Cost ~ Intent
+Cmplx ~ Intent
+MktEff ~ Intent
+
+# residual correlations
+'
+
+fitsem11f <- sem(slr.semmod11f, data=semdata)
+summary(fitsem11f, standardized=TRUE)
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+#Features Selection with FSelector Package
+```{r cars}
+
+
+```
+
+
+
+
+
+#Features Selection with FSelector Package
+```{r cars}
+
+
+```
+
+
+
+
+
+
+
+
+```{r cars}
+summary(cars)
+```
